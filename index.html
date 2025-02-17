@@ -617,7 +617,7 @@ let presetCombos = [
 
         // 获取保存的价值
         function getSavedValues() {
-            return JSON.parse(localStorage.getItem('itemValues') || {});
+            return JSON.parse(localStorage.getItem('itemValues')) || {};
         }
 
         // 加载已保存的值
