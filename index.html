@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>麦当劳套餐价值分析</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .menu-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .menu-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .delete-item {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .input-group {
+            margin: 10px 0;
+        }
+
+        input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin-left: 10px;
+        }
+
+        .combo-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        #ranking {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+
+        .saved-combo {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+
+        .delete-combo {
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .search-filter {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .search-filter input,
+        .search-filter select {
+            padding: 5px;
+            margin-right: 10px;
+        }
+
+        .add-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .selected-items {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .selected-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .selected-item input {
+            width: 60px;
+            margin: 0 10px;
+        }
+
+        .remove-item {
+            color: red;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>麦当劳套餐价值分析器</h1>
+    
+    <!-- 搜索和筛选 -->
+    <div class="search-filter">
+        <input type="text" id="searchInput" placeholder="搜索菜品名称">
+        <select id="categoryFilter">
+            <option value="">所有分类</option>
+            <option value="汉堡">汉堡</option>
+            <option value="饮料">饮料</option>
+            <option value="小吃">小吃</option>
+            <option value="甜品">甜品</option>
+            <option value="早餐汉堡">早餐汉堡</option>
+            <option value="咖啡">咖啡</option>
+        </select>
+    </div>
+
+    <!-- 添加新单品 -->
+    <div class="combo-section">
+        <h2>添加新单品</h2>
+        <div class="input-group">
+            <label>单品名称：</label>
+            <input type="text" id="newItemName" placeholder="输入单品名称">
+        </div>
+        <div class="input-group">
+            <label>分类：</label>
+            <select id="newItemCategory">
+                <option value="汉堡">汉堡</option>
+                <option value="饮料">饮料</option>
+                <option value="小吃">小吃</option>
+                <option value="甜品">甜品</option>
+                <option value="早餐汉堡">早餐汉堡</option>
+                <option value="咖啡">咖啡</option>
+            </select>
+        </div>
+        <button onclick="addNewItem()">添加单品</button>
+    </div>
+
+    <!-- 重置默认价值 -->
+    <button onclick="setDefaultValue()">重置所有价值到默认值</button>
+
+    <!-- 菜单列表 -->
+    <div class="menu-container" id="menuContainer"></div>
+
+    <!-- 套餐输入 -->
+    <div class="combo-section">
+        <h2>分析你的套餐</h2>
+        <div class="input-group">
+            <label>套餐名称：</label>
+            <input type="text" id="comboName" placeholder="输入套餐名称">
+        </div>
+        <div class="input-group">
+            <label>套餐价格：</label>
+            <input type="number" id="comboPrice" step="0.01" min="0">
+        </div>
+        <div class="input-group">
+            <label>已选菜品：</label>
+            <div class="selected-items" id="selectedItems"></div>
+        </div>
+        <button onclick="calculateCombo()">计算价值比</button>
+        <button onclick="saveCombo()">保存套餐</button>
+        <div id="result" class="error"></div>
+    </div>
+
+    <!-- 套餐排名 -->
+    <div id="ranking">
+        <h2>套餐价值排名</h2>
+        <div id="rankingList"></div>
+    </div>
+
+    <!-- 保存的套餐 -->
+    <div class="combo-section">
+        <h2>保存的套餐</h2>
+        <div id="savedCombos"></div>
+    </div>
+
+    <script>
+        //1 - drink
+        //2 - dessert
+        //3 - snack
+        //4 - gud snack & rubbish burger
+        //5 - burger
+        //6 - gud burger
+        //7 - really gud burger
+
+        let defaultMenuItems=[
+        { name: "巨无霸", category: "汉堡", value: 6 },
+{ name: "汉堡包", category: "汉堡", value: 4 },
+{ name: "麦辣鸡腿汉堡", category: "汉堡", value: 5 },
+{ name: "板烧鸡腿堡", category: "汉堡", value: 5 },
+{ name: "麦香鸡", category: "汉堡", value: 4},
+{ name: "麦香鱼", category: "汉堡", value: 4 },
+{ name: "吉士汉堡包", category: "汉堡", value: 4 },
+{ name: "双层吉士汉堡", category: "汉堡", value: 5 },
+{ name: "不素之霸双层牛堡", category: "汉堡", value: 6 },
+{ name: "双层深海鳕鱼堡", category: "汉堡", value: 5 },
+{ name: "培根安格斯厚牛堡", category: "汉堡", value: 7 },
+{ name: "芝士安格斯厚牛堡", category: "汉堡", value: 7 },
+{ name: "培根双层安格斯厚牛堡", category: "汉堡", value: 9 },
+{ name: "芝士双层安格斯厚牛堡", category: "汉堡", value: 9 },
+{ name: "培根蔬萃双层牛堡", category: "汉堡", value: 6 },
+{ name: "酥酥多笋卷", category: "汉堡", value: 4 },
+
+{ name: "可口可乐", category: "饮料", value: 1 },
+{ name: "无糖可口可乐", category: "饮料", value: 1 },
+{ name: "阳光柠檬红茶", category: "饮料", value: 1 },
+{ name: "雪碧", category: "饮料", value: 1 },
+{ name: "怡泉+C", category: "饮料", value: 1 },
+{ name: "【美汁源】“黄金橙橙”", category: "饮料", value: 1 },
+{ name: "100%苹果汁", category: "饮料", value: 1 },
+{ name: "优品豆浆", category: "饮料", value: 1 },
+{ name: "纯牛奶（盒装）", category: "饮料", value: 1 },
+{ name: "热朱古力", category: "饮料", value: 1 },
+{ name: "锡兰红茶", category: "饮料", value: 1 },
+{ name: "鲜煮咖啡", category: "饮料", value: 1 },
+{ name: "纯悦", category: "饮料", value: 1 },
+
+{ name: "脆脆薯条", category: "小吃", value: 3 },
+{ name: "麦麦趣鸡球", category: "小吃", value: 3 },
+{ name: "薯条", category: "小吃", value: 3 },
+{ name: "麦乐鸡 (4块)", category: "小吃", value: 2.6 },
+{ name: "麦乐鸡 (5块)", category: "小吃", value: 3 },
+{ name: "玉米杯", category: "小吃", value: 2 },
+{ name: "麦辣鸡翅", category: "小吃", value: 3 },
+{ name: "那么大鸡排", category: "小吃", value: 4 },
+{ name: "苹果片", category: "小吃", value: 2 },
+{ name: "麦麦脆汁鸡（琵琶腿）", category: "小吃", value: 4 },
+{ name: "麦麦脆汁鸡（带骨里脊）", category: "小吃", value: 4 },
+
+{ name: "圆筒冰淇淋", category: "甜品", value: 1.8 },
+{ name: "朱古力新地", category: "甜品", value: 2 },
+{ name: "草莓新地", category: "甜品", value: 2 },
+{ name: "奥利奥麦旋风", category: "甜品", value: 2.5 },
+{ name: "草莓麦旋风", category: "甜品", value: 2.5 },
+{ name: "香芋派", category: "甜品", value: 2 },
+{ name: "菠萝派", category: "甜品", value: 2 },
+
+{ name: "猪柳麦满分", category: "早餐汉堡", value: 5 },
+{ name: "猪柳蛋麦满分", category: "早餐汉堡", value: 5 },
+{ name: "双层猪柳蛋麦满分", category: "早餐汉堡", value: 5 },
+{ name: "吉士蛋麦满分", category: "早餐汉堡", value: 5 },
+{ name: "火腿扒麦满分", category: "早餐汉堡", value: 5 },
+{ name: "双层火腿扒麦满分", category: "早餐汉堡", value: 5 },
+{ name: "大脆鸡扒麦满分", category: "早餐汉堡", value: 5 },
+{ name: "原味板烧鸡腿麦满分", category: "早餐汉堡", value: 5 },
+{ name: "双层原味板烧鸡腿麦满分", category: "早餐汉堡", value: 5 },
+{ name: "原味板烧鸡腿炒双蛋堡", category: "早餐汉堡", value: 5 },
+{ name: "猪柳炒双蛋堡", category: "早餐汉堡", value: 5 },
+{ name: "吉士炒双蛋堡", category: "早餐汉堡", value: 5 },
+{ name: "德式图林根香肠炒双蛋堡", category: "早餐汉堡", value: 5 },
+{ name: "火腿扒早安营养卷", category: "早餐汉堡", value: 5 },
+{ name: "图林根香肠早安营养卷", category: "早餐汉堡", value: 5 },
+{ name: "皮蛋鸡肉粥", category: "早餐汉堡", value: 3 },
+{ name: "雪菜脆笋鸡肉粥", category: "早餐汉堡", value: 3 },
+{ name: "脆薯饼", category: "小吃", value: 3 },
+{ name: "脆香油条", category: "小吃", value: 3 },
+{ name: "德式图林根香肠", category: "小吃", value: 3 },
+{ name: "优品豆浆", category: "饮料", value: 1 },
+
+{ name: "冰奶铁", category: "咖啡", value: 1 },
+{ name: "热奶铁", category: "咖啡", value: 1 },
+{ name: "冰燕麦奶铁", category: "咖啡", value: 1 },
+{ name: "热燕麦奶铁", category: "咖啡", value: 1 },
+{ name: "冰美式", category: "咖啡", value: 1 },
+{ name: "热美式", category: "咖啡", value: 1 },
+{ name: "冰焦糖玛奇朵", category: "咖啡", value: 1 },
+{ name: "热焦糖玛奇朵", category: "咖啡", value: 1 },
+{ name: "卡布奇诺", category: "咖啡", value: 1 },
+{ name: "冰摩卡", category: "咖啡", value: 1 },
+{ name: "热摩卡", category: "咖啡", value: 1 },
+{ name: "冰特浓比利时燕麦黑巧", category: "咖啡", value: 1 },
+{ name: "热特浓比利时燕麦黑巧", category: "咖啡", value: 1 },
+{ name: "冰特浓抹茶牛奶", category: "咖啡", value: 1 },
+{ name: "热特浓抹茶牛奶", category: "咖啡", value: 1 },
+{ name: "冰燕麦奶", category: "咖啡", value: 1 },
+{ name: "热燕麦奶", category: "咖啡", value: 1 },
+{ name: "冰特浓比利时黑巧", category: "咖啡", value: 1 },
+{ name: "热特浓比利时黑巧", category: "咖啡", value: 1 },
+{ name: "川宁伯爵红茶", category: "咖啡", value: 1 },
+{ name: "冰牛奶", category: "咖啡", value: 1 },
+{ name: "热牛奶", category: "咖啡", value: 1 },
+{ name: "特浓抹茶雪冰", category: "咖啡", value: 2 },
+{ name: "特浓奶香雪冰", category: "咖啡", value: 2 },
+{ name: "特浓比利时黑巧雪冰", category: "咖啡", value: 2 },
+{ name: "抹茶阿芙佳朵", category: "咖啡", value: 2 },
+{ name: "咖啡阿芙佳朵", category: "咖啡", value: 2 },
+{ name: "草莓拉明顿", category: "咖啡", value: 2 }
+];
+
+        // 从localStorage加载数据
+        let menuItems = JSON.parse(localStorage.getItem('menuItems')) || defaultMenuItems;
+
+
+//set default value function
+function setDefaultValue() {
+    if(!confirm("确定重置所有价值到默认值吗？此操作无法撤销哦！")) return;
+    let res={};
+    defaultMenuItems.forEach(item => {
+        res[item.name]=item.value;
+    });
+
+    console.log(res);
+    localStorage['itemValues']=JSON.stringify(res);
+
+    loadSavedValues();
+}
+
+let presetCombos = [
+            {name: "巨无霸三件套",
+                price: 36.5,
+                items: [
+                    { name: "巨无霸", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 }
+                ]
+            },
+            {name: "麦辣鸡腿堡三件套",
+                price: 33,
+                items: [
+                    { name: "麦辣鸡腿汉堡", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 }
+                ]
+            },
+            {name: "随心配：双层吉士+可乐",
+                price: 13.9,
+                items: [
+                    { name: "双层吉士汉堡", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 }
+                ]
+            },
+            {name: "随心配：双层吉士+香芋派",
+                price: 13.9,
+                items: [
+                    { name: "双层吉士汉堡", quantity: 1 },
+                    { name: "香芋派", quantity: 1 }
+                ]
+            },
+            {name: "两个随心配：2x双层吉士+可乐+香芋派",
+                price: 13.9*2,
+                items: [
+                    { name: "双层吉士汉堡", quantity: 2 },
+                    { name: "可口可乐", quantity: 1 },
+                    { name: "香芋派", quantity: 1 }
+                ]
+            },
+            {name: "安格斯三件套",
+                price: 39.9,
+                items: [
+                    { name: "培根安格斯厚牛堡", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 },
+                    { name: "薯条", quantity: 1 }
+                ]
+            },
+            {name: "麦金卡鸡肉四件套（麦辣）",
+                price: 27,
+                items: [
+                    { name: "麦辣鸡腿汉堡", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "麦乐鸡 (4块)", quantity: 1 }
+                ]
+            },{name: "麦金卡鸡肉四件套（板烧）",
+                price: 27,
+                items: [
+                    { name: "板烧鸡腿堡", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "麦乐鸡 (4块)", quantity: 1 }
+                ]
+            },{name: "麦金卡巨无霸四件套",
+                price: 31,
+                items: [
+                    { name: "巨无霸", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "麦乐鸡 (4块)", quantity: 1 }
+                ]
+            },{name: "麦金卡安格斯四件套",
+                price: 36,
+                items: [
+                    { name: "培根安格斯厚牛堡", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "麦乐鸡 (4块)", quantity: 1 }
+                ]
+            },{name: "麦金卡大快朵颐双人餐",
+                price: 38.9,
+                items: [
+                    { name: "板烧鸡腿堡", quantity: 1 },
+                    { name: "香辣鸡腿汉堡", quantity: 1 },
+                    { name: "可口可乐", quantity: 1 },
+                    { name: "怡泉+C", quantity: 1 },
+                    { name: "麦辣鸡翅", quantity: 1 },
+                    { name: "麦乐鸡 (4块)", quantity: 1 }
+                ]
+            },{name: "BFF双人餐",
+                price: 61.9,
+                items: [
+                    { name: "板烧鸡腿堡", quantity: 1 },
+                    { name: "香辣鸡腿汉堡", quantity: 1 },
+                    { name: "麦辣鸡翅", quantity: 2 },
+                    { name: "麦乐鸡 (5块)", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "可口可乐", quantity: 2 },
+                ]
+            },{name: "7种随心配",
+                price: 72,
+                items: [
+                    { name: "巨无霸", quantity: 2 },
+                    { name: "麦辣鸡翅", quantity: 1 },
+                    { name: "麦麦脆汁鸡（琵琶腿）", quantity: 1 },
+                    { name: "那么大鸡排", quantity: 1 },
+                    { name: "可口可乐", quantity: 2 },
+                ]
+            },{name: "金拱门双人堡堡桶",
+                price: 72,
+                items: [
+                    { name: "板烧鸡腿堡", quantity: 1 },
+                    { name: "香辣鸡腿汉堡", quantity: 1 },
+                    { name: "麦辣鸡翅", quantity: 1 },
+                    { name: "麦乐鸡 (5块)", quantity: 1 },
+                    { name: "薯条", quantity: 1 },
+                    { name: "麦麦脆汁鸡（琵琶腿）", quantity: 1 },
+                    { name: "可口可乐", quantity: 2 },
+                ]
+            },
+            
+        ];
+
+        let savedCombos = JSON.parse(localStorage.getItem('savedCombos')) || [];
+
+        // 初始化页面
+        function init() {
+            renderMenuItems();
+            renderItemSelection();
+            loadSavedValues();
+            renderSavedCombos();
+            setupSearchFilter();
+        }
+
+        // 设置搜索和筛选功能
+        function setupSearchFilter() {
+            const searchInput = document.getElementById('searchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+
+            searchInput.addEventListener('input', () => renderMenuItems());
+            categoryFilter.addEventListener('change', () => renderMenuItems());
+        }
+
+        // 渲染菜单项
+        function renderMenuItems() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const selectedCategory = document.getElementById('categoryFilter').value;
+
+            const filteredItems = menuItems.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchText);
+                const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
+                return matchesSearch && matchesCategory;
+            });
+
+            const container = document.getElementById("menuContainer");
+            
+            container.innerHTML = filteredItems.map(item => `
+                <div class="menu-item">
+                    <button class="delete-item" onclick="deleteItem('${item.name}')">×</button>
+                    <h3>${item.name}</h3>
+                    <p>分类：${item.category}</p>
+                    <input type="number" 
+                           data-name="${item.name}"
+                           placeholder="输入价值"
+                           step="0.01"
+                           min="0"
+                           value="${getSavedValues()[item.name] || ''}"
+                           onchange="saveValue('${item.name}')">
+                    <button class="add-button spinButton" onclick="addToCombo('${item.name}')">+</button>
+                </div>
+            `).join('');
+            loadSavedValues(); // 确保加载保存的价值
+        }
+
+        // 新增添加菜品到套餐功能
+        function addToCombo(itemName) {
+            if (!selectedItems[itemName]) {
+                selectedItems[itemName] = 1;
+            } else {
+                selectedItems[itemName]++;
+            }
+            renderSelectedItems();
+        }
+
+        // 渲染已选菜品列表
+        function renderSelectedItems() {
+            const container = document.getElementById('selectedItems');
+            container.innerHTML = Object.entries(selectedItems).map(([name, quantity]) => `
+                <div class="selected-item">
+                    <span>${name}</span>
+                    <input type="number" 
+                           value="${quantity}" 
+                           min="1" 
+                           onchange="updateQuantity('${name}', this.value)">
+                    <span class="remove-item" onclick="removeItem('${name}')">×</span>
+                </div>
+            `).join('');
+        }
+
+        // 更新数量
+        function updateQuantity(name, quantity) {
+            selectedItems[name] = parseInt(quantity) || 1;
+            renderSelectedItems();
+        }
+
+        // 删除菜品
+        function removeItem(name) {
+            delete selectedItems[name];
+            renderSelectedItems();
+        }
+        
+        // 渲染菜品选择
+        function renderItemSelection() {
+            // const container = document.getElementById('selectedItems');
+            // container.innerHTML = menuItems.map(item => `
+            //     <div style="margin: 10px 0;">
+            //         <label>${item.name}</label>
+            //         <input type="number" 
+            //                data-name="${item.name}" 
+            //                placeholder="数量"
+            //                min="0"
+            //                step="1"
+            //                value="0">
+            //     </div>
+            // `).join('');
+        }
+
+        // 添加新单品
+        function addNewItem() {
+            const name = document.getElementById('newItemName').value.trim();
+            const category = document.getElementById('newItemCategory').value;
+
+            if (!name) {
+                alert("请输入单品名称");
+                return;
+            }
+            if (menuItems.some(item => item.name === name)) {
+                alert("该单品已存在");
+                return;
+            }
+            const newItem = { name: name, category: category };
+            menuItems.push(newItem);
+            saveMenuItems();
+            renderMenuItems();
+            renderItemSelection();
+            document.getElementById('newItemName').value = '';
+        }
+
+        // 删除单品
+        function deleteItem(name) {
+            let ans= confirm("确定删除"+name+"这个单品吗？请注意，该操作不是将菜品移出套餐。该操作不可逆！");
+            if(!ans) return;
+            menuItems = menuItems.filter(item => item.name !== name);
+            saveMenuItems();
+            renderMenuItems();
+            renderItemSelection();
+        }
+
+        // 保存菜单项到localStorage
+        function saveMenuItems() {
+            localStorage.setItem('menuItems', JSON.stringify(menuItems));
+        }
+
+        // 其他函数保持不变...
+        
+        // 保存价值到localStorage
+        function saveValue(name) {
+            const value = parseFloat(document.querySelector(`input[data-name="${name}"]`).value) || 0;
+            const savedValues = getSavedValues();
+            savedValues[name] = value;
+            localStorage.setItem('itemValues', JSON.stringify(savedValues));
+        }
+
+        // 获取保存的价值
+        function getSavedValues() {
+            return JSON.parse(localStorage.getItem('itemValues') || {});
+        }
+
+        // 加载已保存的值
+        function loadSavedValues() {
+            const savedValues = getSavedValues();
+            menuItems.forEach(item => {
+                const input = document.querySelector(`input[data-name="${item.name}"]`);
+                if (input && savedValues[item.name]) {
+                    input.value = savedValues[item.name];
+                }
+            });
+        }
+
+        // 计算套餐价值
+        function calculateCombo() {
+            const price = parseFloat(document.getElementById('comboPrice').value);
+            const savedValues = getSavedValues();
+            
+            if (!price) {
+                showResult("请输入有效的价格", true);
+                return;
+            }
+
+            const items = Object.entries(selectedItems);
+            if (items.length === 0) {
+                showResult("请选择至少一个菜品", true);
+                return;
+            }
+
+            const totalValue = items.reduce((sum, [name, quantity]) => {
+                return sum + (savedValues[name] || 0) * quantity;
+            }, 0);
+
+            if (totalValue === 0) {
+                showResult("所选菜品的总价值不能为0", true);
+                return;
+            }
+
+            const ratio = (price / totalValue).toFixed(2);
+            showResult(`价值比：${ratio} (¥${price} / ${totalValue})`);
+            updateRanking(price, totalValue);
+        }
+
+        // 保存套餐
+        function saveCombo() {
+            const name = document.getElementById('comboName').value.trim();
+            const price = parseFloat(document.getElementById('comboPrice').value);
+            const quantityInputs = document.querySelectorAll('#itemSelection input[type="number"]');
+
+            if (!name || !price) {
+                showResult("请输入套餐名称和价格", true);
+                return;
+            }
+
+            const items = Object.entries(selectedItems).map(([name, quantity]) => ({
+                name: name,
+                quantity: quantity
+            }));
+
+            if (items.length === 0) {
+                showResult("请选择至少一个菜品", true);
+                return;
+            }
+
+            const newCombo = {
+                name: name,
+                price: price,
+                items: items
+            };
+            savedCombos.push(newCombo);
+            saveSavedCombos();
+            renderSavedCombos();
+        }
+
+        // 渲染保存的套餐
+        function renderSavedCombos() {
+            const container = document.getElementById('savedCombos');
+            container.innerHTML = savedCombos.map((combo, index) => `
+                <div class="saved-combo">
+                    <h3>${combo.name} - ¥${combo.price}</h3>
+                    <p>包含：${combo.items.map(item => `${item.quantity}x ${item.name}`).join(', ')}</p>
+                    <button class="delete-combo" onclick="deleteCombo(${index})">删除</button>
+                </div>
+            `).join('');
+        }
+
+        // 删除套餐
+        function deleteCombo(index) {
+            savedCombos.splice(index, 1);
+            saveSavedCombos();
+            renderSavedCombos();
+        }
+
+        // 保存套餐到localStorage
+        function saveSavedCombos() {
+            localStorage.setItem('savedCombos', JSON.stringify(savedCombos));
+        }
+
+        // 显示结果
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = isError ? 'error' : '';
+        }
+
+        // 更新排名
+        function updateRanking(userPrice, userValue) {
+            const savedValues = getSavedValues();
+            const userRatio = userPrice / userValue;
+
+            // 计算所有套餐的价值比
+            const allCombos = [...savedCombos, ...presetCombos].map(combo => {
+                const total = combo.items.reduce((sum, item) => sum + (savedValues[item.name] || 0) * item.quantity, 0);
+                // console.log(combo,total);
+                return {
+                    name: combo.name,
+                    ratio: total > 0 ? (combo.price / total) : Infinity,
+                    isUser: false
+                };
+            });
+
+            allCombos.push({ name: '你的套餐', ratio: userRatio, isUser: true });
+
+            // 排序（比率越低越好）
+            const sorted = allCombos.sort((a, b) => a.ratio - b.ratio);
+
+            // 显示排名
+            const rankingList = document.getElementById('rankingList');
+            rankingList.innerHTML = sorted.map((combo, index) => `
+                <div style="margin: 10px 0; ${combo.isUser ? 'color:red' : ''}" >
+                    ${index + 1}. ${combo.name} - 价值比: ${combo.ratio.toFixed(2)}
+                </div>
+            `).join('');
+        }
+
+        // 初始化
+        init();
+        
+    </script>
+</body>
+</html>
